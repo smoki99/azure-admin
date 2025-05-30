@@ -1,7 +1,5 @@
 # Azure Admin Container Setup
 
-[Previous content remains unchanged until Documentation Access section]
-
 ## Documentation Access
 
 ### Inside Container
@@ -55,5 +53,3 @@ A welcome message is displayed when starting the container, showing:
 - Terminal-based styling
 - Light/dark theme support
 - Search functionality
-
-[Rest of the content remains unchanged]

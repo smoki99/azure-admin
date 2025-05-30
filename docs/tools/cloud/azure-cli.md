@@ -13,6 +13,9 @@ The Azure Command-Line Interface (CLI) provides a comprehensive set of tools for
 # Login to Azure
 az login
 
+# Login to Azure with Multi Factor
+az login --use-device
+
 # Select subscription
 az account set --subscription "subscription-name"
 
