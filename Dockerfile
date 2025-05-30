@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
     software-properties-common apt-transport-https unzip vim tree file jq lsof \
     net-tools iproute2 iputils-ping iputils-tracepath iputils-arping \
     iputils-clockdiff dnsutils bind9-dnsutils ldnsutils traceroute tcptraceroute \
-    mtr-tiny nmap netcat-openbsd socat \
+    mtr-tiny nmap netcat-openbsd socat rsync duf ncdu \
     iperf3 iftop nethogs iptraf-ng strace htop iotop \
     bridge-utils vlan iptables ipset ebtables arptables conntrack \
     apache2-utils ipcalc mosh ripgrep w3m neovim swaks \
