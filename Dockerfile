@@ -155,13 +155,19 @@ RUN curl -L https://github.com/charmbracelet/glow/releases/download/v2.1.0/glow_
     && dpkg -i /tmp/glow.deb \
     && rm /tmp/glow.deb
 
+# Install yq YAML processor
+RUN YQ_VER=$(curl -s https://api.github.com/repos/mikefarah/yq/releases/latest | grep -Po '"tag_name": "v\K[^"]*') \
+    && curl -sL "https://github.com/mikefarah/yq/releases/download/v${YQ_VER}/yq_linux_amd64" -o /usr/local/bin/yq \
+    && chmod +x /usr/local/bin/yq
+
 # Configure aliases
 RUN echo "alias sco='skopeo'" >> /root/.bash_aliases && \
     echo "alias regctl='regctl'" >> /root/.bash_aliases && \
     echo "alias lazydocker='lazydocker'" >> /root/.bash_aliases && \
     echo "alias wg='wormhole'" >> /root/.bash_aliases && \
     echo "alias dog='dog'" >> /root/.bash_aliases && \
-    echo "alias w3='w3m'" >> /root/.bash_aliases
+    echo "alias w3='w3m'" >> /root/.bash_aliases && \
+    echo "alias yaml='yq'" >> /root/.bash_aliases
 
 # Configure shell
 RUN echo "source /root/.bash_aliases" >> /root/.bashrc && \
@@ -182,5 +188,5 @@ RUN echo '# Show documentation information' >> /root/.bashrc && \
 # Set working directory
 WORKDIR /workspace
 
-# Set entrypoint
-ENTRYPOINT ["/bin/bash"]
+# Set default command
+CMD ["/bin/bash"]

@@ -35,10 +35,12 @@ podman run -it \
 1. Push the container to a registry:
 ```bash
 # Tag for your registry
-docker tag azure-admin myregistry.azurecr.io/azure-admin:latest
+docker tag azure-admin smoki99/azure-admin:lastest
+docker tag azure-admin smoki99/azure-admin:1.0.x
 
 # Push to registry
-docker push myregistry.azurecr.io/azure-admin:latest
+docker push smoki99/azure-admin:latest
+docker push smoki99/azure-admin:1.0.x
 ```
 
 2. Create a Pod YAML:
