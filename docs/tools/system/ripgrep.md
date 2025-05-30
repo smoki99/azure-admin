@@ -1,255 +1,279 @@
-# ripgrep (rg) - Fast Text Search Tool
+# ripgrep - Fast Line-Oriented Search Tool
 
 ## Overview
-`ripgrep` (rg) is a line-oriented search tool that recursively searches directories for a regex pattern. It's significantly faster than traditional tools like grep and has better defaults for developers.
+`ripgrep` (rg) is a highly efficient search tool that recursively searches directories for a regex pattern. It respects gitignore rules and automatically skips hidden files, binary files, and version control directories.
 
 ## Official Documentation
-[ripgrep User Guide](https://github.com/BurntSushi/ripgrep/blob/master/GUIDE.md)
+[ripgrep Documentation](https://github.com/BurntSushi/ripgrep/blob/master/GUIDE.md)
 
 ## Basic Usage
 
-### Simple Searching
+### 1. Simple Pattern Matching
 ```bash
-# Search for pattern in current directory
+# Basic text search
 rg "pattern"
-
-# Search in specific file
-rg "pattern" file.txt
 
 # Case insensitive search
 rg -i "pattern"
-```
 
-### File Type Filtering
-```bash
-# List supported file types
-rg --type-list
-
-# Search only in YAML files
-rg -t yaml "kind: Deployment"
-
-# Search in Python files
-rg -t py "def main"
+# Search specific file types
+rg -t py "pattern"  # Python files
+rg -t js "pattern"  # JavaScript files
 
 # Exclude file types
-rg -T js "function"
+rg -T py "pattern"  # Exclude Python files
+```
+
+### 2. File and Directory Control
+```bash
+# Search specific directory
+rg "pattern" path/to/dir
+
+# Search multiple file types
+rg -t py -t js "pattern"
+
+# Include hidden/dot files
+rg --hidden "pattern"
+
+# Follow symbolic links
+rg -L "pattern"
+```
+
+### 3. Output Control
+```bash
+# Show line numbers
+rg -n "pattern"
+
+# Show context lines
+rg -C 2 "pattern"     # 2 lines before and after
+rg -B 2 "pattern"     # 2 lines before
+rg -A 2 "pattern"     # 2 lines after
 ```
 
 ## Cloud/Container Use Cases
 
-### 1. Kubernetes Configuration
+### 1. Code Analysis
 ```bash
-# Search in all YAML files
-rg -t yaml "containerPort: 80"
+# Find Azure resource definitions
+rg "azurerm_" --type terraform
 
-# Find all services
-rg -t yaml "kind: Service"
+# Search Kubernetes manifests
+rg -t yaml "kind: Deployment"
 
-# Search for specific labels
-rg -t yaml 'labels:.*environment: production'
+# Find Docker configurations
+rg --type dockerfile "FROM"
 ```
 
-### 2. Log Analysis
+### 2. Configuration Management
 ```bash
-# Search container logs
-rg "Error|Exception" /var/log/containers/
+# Search environment variables
+rg -g '*.env*' '^[A-Z_]+'
 
-# Find authentication failures
-rg "authentication failed" /var/log/
+# Find configuration patterns
+rg -g '*.conf' 'listen.*443'
 
-# Search compressed logs
-rg -z "ERROR" /var/log/archive/
+# Search for IP addresses
+rg -g '*.yaml' '\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
 ```
 
-### 3. Code Analysis
+### 3. Log Analysis
 ```bash
-# Find Azure SDK usage
-rg "azure.mgmt" ./src
+# Search error logs
+rg -g 'error*.log' 'Exception|Error|Failed'
 
-# Search for security tokens
-rg -i "api[_-]key|secret|password"
+# Find Kubernetes pod issues
+rg -g '*.log' 'CrashLoopBackOff'
 
-# Find TODO comments
-rg -t py "TODO|FIXME"
+# Search Azure diagnostic logs
+rg -g 'azure*.log' 'ResourceNotFound'
 ```
 
 ## Advanced Features
 
-### 1. Context Control
+### 1. Pattern Matching
 ```bash
-# Show 3 lines before and after match
-rg -C 3 "error"
+# Regular expressions
+rg '\w+@\w+\.\w+'  # Find email addresses
 
-# Show 2 lines before match
-rg -B 2 "error"
-
-# Show 2 lines after match
-rg -A 2 "error"
-```
-
-### 2. Output Control
-```bash
-# Show only matched text
-rg -o "pattern"
-
-# Include line numbers
-rg -n "pattern"
-
-# Show files that would be searched
-rg --files
-
-# Count matches
-rg --count "pattern"
-```
-
-### 3. Pattern Matching
-```bash
-# Multiple patterns
-rg "error|warning|critical"
+# Fixed strings (no regex)
+rg -F "special.chars.*"
 
 # Word boundaries
-rg -w "error"
+rg -w "word"
+```
 
-# Regular expressions
-rg '\d{3}-\d{2}-\d{4}'
+### 2. Output Formatting
+```bash
+# Only print file names
+rg -l "pattern"
+
+# Only print matched parts
+rg -o "pattern"
+
+# JSON output
+rg --json "pattern"
+```
+
+### 3. Performance Options
+```bash
+# Disable all smart filtering
+rg -uu "pattern"
+
+# Search compressed files
+rg -z "pattern"
+
+# Use multiple threads
+rg --threads 8 "pattern"
 ```
 
 ## Best Practices
 
-### 1. Performance
+### 1. Search Configuration
 ```bash
-# Respect gitignore
-rg --no-ignore "pattern"
+# Use .rgignore file
+echo "*.log" > .rgignore
+echo "temp/" >> .rgignore
 
-# Search hidden files
-rg -. "pattern"
+# Configure type definitions
+rg --type-add 'web:*.{html,css,js}'
 
-# Follow symlinks
-rg -L "pattern"
+# Use configuration file
+rg --config /path/to/config
 ```
 
-### 2. Search Scope
+### 2. Performance
 ```bash
-# Exclude directories
-rg -g '!node_modules/' "pattern"
+# Limit search depth
+rg --max-depth 3 "pattern"
 
-# Include only specific files
-rg -g '*.{yaml,yml}' "pattern"
+# Set file size limit
+rg --max-filesize 1M "pattern"
 
-# Multiple file types
-rg -t yaml -t json "pattern"
+# Use memory buffers
+rg --mmap "pattern"
 ```
 
-### 3. Output Format
+### 3. Output Control
 ```bash
-# JSON output
-rg --json "pattern"
-
-# Only file names
-rg -l "pattern"
+# Custom output format
+rg --format '{file}:{line}:{text}'
 
 # Replace matches
 rg -r 'replacement' "pattern"
+
+# Count matches only
+rg --count "pattern"
 ```
 
 ## Common Scenarios
 
-### 1. Configuration Management
+### 1. Code Search
 ```bash
-# Find environment variables
-rg -t dockerfile 'ENV '
-rg -t yaml 'environment:'
+# Find function definitions
+rg '^(def|function).*'
 
-# Search for IP addresses
-rg -w '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
+# Search specific file extensions
+rg -g '*.{js,ts}' "pattern"
+
+# Exclude test files
+rg -g '!*_test.go' "pattern"
 ```
 
 ### 2. Security Auditing
 ```bash
-# Find exposed credentials
-rg -i 'password|secret|key'
+# Find API keys
+rg '[A-Za-z0-9]{32}'
 
-# Check file permissions
-rg '0777|chmod 777'
+# Search for passwords
+rg -i 'password.*=.*'
 
-# Find TODO security items
-rg 'TODO.*security'
+# Find IP addresses
+rg '\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b'
 ```
 
-### 3. Development Tasks
+### 3. Configuration Management
 ```bash
-# Find unused imports
-rg -t py '^import.*' --files-without-match
+# Find environment variables
+rg '^export \w+='
 
-# Search for deprecated features
-rg 'DEPRECATED|TODO.*remove'
+# Search for URLs
+rg 'https?://[^\s"]+'
 
-# Find debug statements
-rg 'console\.log|print|debug'
-```
-
-## Integration Examples
-
-### 1. With Version Control
-```bash
-# Search uncommitted changes
-git status -s | rg '^.M' | xargs rg "pattern"
-
-# Search specific branch
-git show branch:file | rg "pattern"
-```
-
-### 2. With Container Tools
-```bash
-# Search container files
-podman export container | tar -t | rg "pattern"
-
-# Search Docker files
-rg -t dockerfile 'FROM.*alpine'
-```
-
-### 3. With Azure Tools
-```bash
-# Search Azure templates
-rg -t json '"type": "Microsoft.+'
-
-# Find resource dependencies
-rg -t json '"dependsOn":'
+# Find port numbers
+rg 'port.*=.*\d+'
 ```
 
 ## Troubleshooting
 
 ### Common Issues
-1. Too many matches
+1. Performance Problems
    ```bash
-   # Narrow search with type
-   rg -t specific_type "pattern"
-   
+   # Limit search depth
+   rg --max-depth 2 "pattern"
+
+   # Skip large files
+   rg --max-filesize 1M "pattern"
+
+   # Debug info
+   rg --debug "pattern"
+   ```
+
+2. Pattern Matching Issues
+   ```bash
+   # Escape special characters
+   rg -F "pattern[.*]"
+
+   # Test pattern
+   rg --debug-regex "pattern"
+
    # Use word boundaries
    rg -w "pattern"
    ```
 
-2. Performance issues
+3. File Type Issues
    ```bash
-   # Exclude large directories
-   rg --ignore-dir=node_modules "pattern"
-   
-   # Limit depth
-   rg --max-depth 3 "pattern"
+   # List supported types
+   rg --type-list
+
+   # Create custom type
+   rg --type-add 'custom:*.{ext1,ext2}'
+
+   # Force binary search
+   rg -a "pattern"
    ```
 
-3. Missing matches
+### Integration Tips
+1. Version Control
    ```bash
-   # Check ignored files
-   rg --debug "pattern"
-   
-   # Include hidden files
-   rg -. "pattern"
+   # Search uncommitted changes
+   rg "pattern" $(git ls-files)
+
+   # Ignore .gitignore
+   rg --no-ignore "pattern"
+
+   # Search specific branch
+   git checkout branch && rg "pattern"
    ```
 
-### Best Practices
-1. Use type filtering
-2. Leverage .gitignore
-3. Be specific with patterns
-4. Consider context needs
-5. Choose appropriate output format
+2. CI/CD Pipelines
+   ```bash
+   # Search for TODOs
+   rg "TODO|FIXME" --stats
+
+   # Find deprecated code
+   rg "@deprecated"
+
+   # Check coding standards
+   rg -g '*.{js,ts}' 'console\.log'
+   ```
+
+3. Development Workflow
+   ```bash
+   # Find unused imports
+   rg -g '*.py' '^import.*' -l
+
+   # Check error handling
+   rg 'try|catch|except'
+
+   # Find debug code
+   rg 'debugger|console\.log|print'

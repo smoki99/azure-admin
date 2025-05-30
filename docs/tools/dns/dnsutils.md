@@ -1,317 +1,261 @@
-# dnsutils - DNS Utilities Suite
+# dnsutils - DNS Lookup Utilities
 
 ## Overview
-`dnsutils` is a collection of DNS client tools including `dig`, `nslookup`, and `nsupdate`. These tools are essential for DNS querying, troubleshooting, and dynamic DNS updates.
+`dnsutils` is a collection of DNS lookup utilities, including the essential tools `dig`, `nslookup`, and `host`. These tools are crucial for DNS querying, troubleshooting, and domain name resolution in cloud environments.
 
 ## Official Documentation
-[BIND Documentation](https://www.isc.org/bind/)
+[BIND 9 Documentation](https://bind9.readthedocs.io/)
 
 ## Basic Usage
 
-### dig (Domain Information Groper)
+### 1. dig (Domain Information Groper)
 ```bash
-# Simple query
+# Simple DNS lookup
 dig example.com
 
 # Query specific record type
 dig example.com MX
+dig example.com NS
+dig example.com A
 
-# Query specific nameserver
+# Use specific DNS server
 dig @8.8.8.8 example.com
+
+# Reverse DNS lookup
+dig -x 8.8.8.8
 ```
 
-### nslookup
+### 2. nslookup
 ```bash
-# Interactive mode
-nslookup
-> example.com
-
-# Direct query
+# Basic lookup
 nslookup example.com
 
-# Set query type
+# Query specific DNS server
+nslookup example.com 8.8.8.8
+
+# Set record type
 nslookup -type=MX example.com
+nslookup -type=NS example.com
+
+# Interactive mode
+nslookup
+> server 8.8.8.8
+> example.com
 ```
 
-### nsupdate
+### 3. host
 ```bash
-# Interactive update
-nsupdate
-> server ns1.example.com
-> update add host.example.com 3600 A 192.168.1.1
-> send
+# Basic lookup
+host example.com
 
-# Update from file
-nsupdate update.txt
+# Verbose output
+host -v example.com
+
+# Query specific record type
+host -t MX example.com
+host -t NS example.com
+
+# Reverse lookup
+host 8.8.8.8
 ```
 
 ## Cloud/Container Use Cases
 
-### 1. Service Discovery
+### 1. Azure DNS Verification
 ```bash
-# Find service endpoints
-dig SRV _http._tcp.service.example.com
+# Verify Azure DNS records
+dig @168.63.129.16 myapp.azurewebsites.net
 
-# Query container DNS
-dig @127.0.0.1 -p 53 container.local
+# Check Azure Private DNS
+dig @10.0.0.10 myservice.internal +search
 
-# Kubernetes service lookup
-dig @10.96.0.10 service.namespace.svc.cluster.local
+# Validate Custom Domains
+dig myapp.example.com NS
 ```
 
-### 2. DNS Validation
+### 2. Kubernetes DNS
 ```bash
-# Check propagation
-dig +trace example.com
+# Check service DNS
+dig @10.96.0.10 kubernetes.default.svc.cluster.local
 
-# Verify load balancing
-dig service.example.com +short
+# Verify pod DNS resolution
+dig mysql.default.svc.cluster.local
 
-# Test DNS round-robin
-for i in {1..5}; do dig service.example.com +short; done
+# Debug CoreDNS
+dig @10.96.0.10 kubernetes.default.svc.cluster.local +trace
 ```
 
-### 3. Cloud DNS Management
+### 3. Container DNS Resolution
 ```bash
-# Azure DNS query
-dig @168.63.129.16 azure-service.internal
+# Check container DNS
+dig @127.0.0.11 container-name
 
-# AWS Route53 check
-dig +trace example.com @ns-xxx.awsdns-xx.com
+# Verify network DNS
+dig @dns-server service-name.namespace.svc.cluster.local
 
-# GCP DNS verification
-dig @dns.google example.com
+# Debug service discovery
+dig +search service-name
 ```
 
 ## Advanced Features
 
-### 1. DNS Troubleshooting
+### 1. Trace DNS Resolution
+```bash
+# Full resolution trace
+dig +trace example.com
+
+# Show TTL values
+dig +ttlid example.com
+
+# Show timing information
+dig +stats example.com
+```
+
+### 2. DNSSEC Validation
 ```bash
 # Check DNSSEC
 dig +dnssec example.com
 
-# Trace query path
-dig +trace example.com
+# Validate signatures
+dig +sigchase example.com
 
-# Debug query
-dig +debug example.com
+# Check DNSKEY records
+dig +multiline DNSKEY example.com
 ```
 
-### 2. Record Management
+### 3. Batch Processing
 ```bash
-# Batch updates
-nsupdate <<EOF
-server ns1.example.com
-update add www.example.com 3600 A 192.168.1.1
-update delete old.example.com A
-send
-EOF
+# Query multiple records
+dig +short example.com MX NS A
 
-# Zone transfer
-dig @ns1.example.com example.com AXFR
-```
+# Read queries from file
+dig -f queries.txt
 
-### 3. Query Options
-```bash
-# Custom query flags
-dig +noall +answer example.com
-
-# Reverse lookup
-dig -x 192.168.1.1
-
-# TCP query
-dig +tcp example.com
+# Output in batch format
+dig +noall +answer example.com MX NS A
 ```
 
 ## Best Practices
 
-### 1. DNS Querying
+### 1. Performance Optimization
 ```bash
-# Use short format
+# Use +short for brief output
 dig +short example.com
 
-# Verify authoritative answer
-dig +noadditional example.com
+# Minimize query traffic
+dig +norecurse example.com
 
-# Check response time
-dig +stats example.com
+# Cache results
+dig +ttlid example.com
 ```
 
 ### 2. Troubleshooting
 ```bash
-# Full query path
-dig +trace +dnssec example.com
+# Debug query path
+dig +trace example.com
 
-# Check all records
-dig any example.com
+# Check response timing
+dig +stats example.com
 
-# Verify timeouts
-dig +timeout=5 example.com
+# Verify authority
+dig +nssearch example.com
 ```
 
-### 3. Update Security
+### 3. Security Checks
 ```bash
-# Secure updates
-nsupdate -k Kexample.com.+157+15Praha.key
+# Verify DNSSEC
+dig +dnssec example.com
 
-# TSIG authentication
-nsupdate -y "hmac-sha256:keyname:base64key"
+# Check for AXFR
+dig +norecurse AXFR example.com
 
-# Verify update
-dig @server name type
+# Validate SPF records
+dig TXT example.com
 ```
 
 ## Common Scenarios
 
-### 1. DNS Health Check
+### 1. DNS Migration
 ```bash
-# Check nameservers
-dig +short NS example.com
+# Compare authoritative servers
+dig +nssearch old-domain.com
+dig +nssearch new-domain.com
 
-# Verify records
-dig +noall +answer example.com ANY
-
-# Test response time
-dig +stats example.com | grep "Query time"
+# Verify record propagation
+dig @ns1.old-domain.com example.com
+dig @ns1.new-domain.com example.com
 ```
 
-### 2. Service Verification
+### 2. Cloud Service Validation
 ```bash
-# Check mail servers
+# Check Azure endpoints
+dig myapp.azurewebsites.net
+dig mystorage.blob.core.windows.net
+
+# Verify custom domains
+dig CNAME www.example.com
+dig A example.com
+```
+
+### 3. Email Configuration
+```bash
+# Check mail records
 dig MX example.com
-
-# Verify SPF
-dig TXT example.com
-
-# Test service availability
-dig SRV _service._proto.example.com
-```
-
-### 3. DNS Debugging
-```bash
-# Full resolution path
-dig +trace example.com
-
-# Check DNSSEC chain
-dig +dnssec +cd example.com
-
-# Verify reverse DNS
-dig -x IP-ADDRESS
-```
-
-## Integration Examples
-
-### 1. With Container Platforms
-```bash
-# Kubernetes DNS
-dig @10.96.0.10 kubernetes.default.svc.cluster.local
-
-# Docker DNS
-dig @127.0.0.11 container-name
-
-# Service discovery
-dig SRV _service._tcp.consul
-```
-
-### 2. With Cloud Services
-```bash
-# Azure Private DNS
-dig @168.63.129.16 privatelink.database.windows.net
-
-# AWS Service Discovery
-dig service.region.amazonaws.com
-
-# GCP Internal DNS
-dig mylb.internal.gcpproject.com
-```
-
-### 3. With Monitoring Tools
-```bash
-# DNS response time
-dig +stats example.com | awk '/Query time/ {print $4}'
-
-# Record changes
-dig +short example.com > current
-diff previous current
-
-# Monitoring script
-while true; do
-  dig +short example.com
-  sleep 300
-done
+dig TXT example.com  # SPF records
+dig _dmarc.example.com TXT
 ```
 
 ## Troubleshooting
 
 ### Common Issues
-1. Resolution failures
+1. Resolution Failures
    ```bash
-   # Check nameservers
+   # Check DNS server connectivity
+   dig +retry=1 example.com
+
+   # Verify DNS server settings
    dig +trace example.com
-   
-   # Verify resolver
-   dig @8.8.8.8 example.com
-   
-   # Test local resolution
-   dig @127.0.0.1 example.com
    ```
 
-2. Update problems
+2. DNSSEC Problems
    ```bash
-   # Debug update
-   nsupdate -d
-   
-   # Check permissions
-   nsupdate -k keyfile
-   
-   # Verify zone
-   dig @server example.com SOA
-   ```
-
-3. DNSSEC issues
-   ```bash
-   # Check DNSSEC chain
+   # Validate DNSSEC chain
    dig +dnssec +cd example.com
-   
-   # Verify DS records
-   dig example.com DS
-   
-   # Test validation
-   dig +cdflag example.com
+
+   # Check signature expiration
+   dig +dnssec +cd DNSKEY example.com
    ```
 
-### Best Practices
-1. Regular monitoring
+3. Propagation Issues
    ```bash
-   # Check response times
-   dig +stats example.com
-   
-   # Monitor changes
-   dig +short example.com
-   
-   # Verify DNSSEC
-   dig +dnssec example.com
+   # Check multiple nameservers
+   dig @ns1.example.com example.com
+   dig @ns2.example.com example.com
    ```
 
-2. Security considerations
+### Integration Tips
+1. Azure Integration
    ```bash
-   # Use TSIG
-   nsupdate -k keyfile
-   
-   # Verify updates
-   dig @server name type
-   
-   # Check DNSSEC
-   dig +dnssec example.com
+   # Check Azure DNS
+   dig @168.63.129.16 myapp.azurewebsites.net
+
+   # Verify Private DNS
+   dig +search privateservice.internal
    ```
 
-3. Performance optimization
+2. Kubernetes Integration
    ```bash
-   # Use TCP when needed
-   dig +tcp example.com
-   
-   # Minimize responses
-   dig +noall +answer example.com
-   
-   # Cache management
-   dig +ttlid example.com
+   # Debug service DNS
+   dig @10.96.0.10 service.namespace.svc.cluster.local
+
+   # Check pod DNS
+   dig +search podname.namespace.pod.cluster.local
+   ```
+
+3. Container DNS
+   ```bash
+   # Verify container resolution
+   dig @127.0.0.11 container-name
+
+   # Check network DNS
+   dig +search service-name

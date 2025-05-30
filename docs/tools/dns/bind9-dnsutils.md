@@ -1,294 +1,259 @@
-# bind9-dnsutils - BIND9 DNS Utilities
+# bind9-dnsutils - BIND DNS Server Utilities
 
 ## Overview
-`bind9-dnsutils` provides additional DNS utilities from the BIND9 suite, including `host`, `delv`, and other specialized DNS tools. These tools complement the standard dnsutils package with more advanced DNS investigation capabilities.
+`bind9-dnsutils` provides a comprehensive set of utilities for managing BIND DNS servers, including zone management, key generation, and server configuration tools.
 
 ## Official Documentation
-[BIND9 Documentation](https://bind9.readthedocs.io/)
+[ISC BIND 9 Documentation](https://bind9.readthedocs.io/)
 
 ## Basic Usage
 
-### host Command
+### 1. rndc (Remote Name Daemon Control)
 ```bash
-# Simple lookup
-host example.com
+# Check server status
+rndc status
 
-# Reverse lookup
-host 192.168.1.1
+# Reload zones
+rndc reload
 
-# Query specific record type
-host -t MX example.com
+# Clear cache
+rndc flush
+
+# Stop server
+rndc stop
 ```
 
-### delv Command
+### 2. dnssec-keygen
 ```bash
-# DNSSEC lookup
-delv example.com
+# Generate zone signing key
+dnssec-keygen -a RSASHA256 -b 2048 -n ZONE example.com
 
-# Trace DNSSEC chain
-delv +trace example.com
+# Generate key signing key
+dnssec-keygen -f KSK -a RSASHA256 -b 4096 -n ZONE example.com
 
-# Query specific type
-delv +qtypes=MX example.com
+# Generate TSIG key
+dnssec-keygen -a HMAC-SHA512 -b 512 -n HOST keyname
+```
+
+### 3. named-checkzone
+```bash
+# Check zone file syntax
+named-checkzone example.com /etc/bind/zones/example.com.db
+
+# Check and dump zone
+named-checkzone -D example.com /etc/bind/zones/example.com.db
+
+# Verify serial number
+named-checkzone -i serial example.com /etc/bind/zones/example.com.db
 ```
 
 ## Cloud/Container Use Cases
 
-### 1. Container DNS Verification
+### 1. Azure DNS Integration
 ```bash
-# Check container DNS
-host container.local
+# Check zone before Azure import
+named-checkzone example.com zone.db
 
-# Verify service discovery
-host -t SRV _service._tcp.local
+# Generate DNSSEC keys for Azure
+dnssec-keygen -a RSASHA256 -b 2048 -n ZONE azure.example.com
 
-# Test internal DNS
-host -v service.namespace.svc.cluster.local
+# Verify zone for Azure transfer
+named-checkzone -k azure.example.com /etc/bind/zones/azure.example.com.db
 ```
 
-### 2. DNSSEC Validation
+### 2. Kubernetes Integration
 ```bash
-# Verify DNSSEC chain
-delv +vtrace example.com
+# Check CoreDNS compatibility
+named-checkzone -k cluster.local /etc/bind/zones/cluster.local.db
 
-# Check trust anchors
-delv +root example.com
+# Generate keys for secure updates
+dnssec-keygen -a HMAC-SHA512 -b 512 -n HOST k8s-ddns
 
-# Validate signatures
-delv +cdflag example.com
+# Verify service records
+named-checkzone -D cluster.local /etc/bind/zones/cluster.local.db
 ```
 
-### 3. Service Discovery
+### 3. Container DNS Management
 ```bash
-# Find services
-host -t SRV _http._tcp.service.consul
+# Manage container DNS
+rndc reload container.local
 
-# Check load balancer
-host -t A lb.example.com
+# Update container zones
+named-checkzone container.local /etc/bind/zones/container.local.db
 
-# Verify cloud endpoints
-host service.region.cloudapp.azure.com
+# Clear container DNS cache
+rndc flush
 ```
 
 ## Advanced Features
 
-### 1. DNSSEC Analysis
+### 1. Zone Management
 ```bash
-# Check signature
-delv +dnssec example.com
+# Sign zone with DNSSEC
+dnssec-signzone -A -3 $(head -c 1000 /dev/random | sha1sum | cut -b 1-16) \
+  -N INCREMENT -o example.com -t zone.db
 
-# Validate chain
-delv +vtrace example.com
+# Check zone integrity
+named-checkzone -i full example.com zone.db
 
-# Show trust anchors
-delv +trust example.com
+# Verify DNSSEC chain
+named-checkzone -k example.com zone.db
 ```
 
-### 2. Record Analysis
+### 2. Key Management
 ```bash
-# Verbose output
-host -v example.com
+# Create and manage TSIG keys
+tsig-keygen -a hmac-sha512 keyname > tsig.key
 
-# Check all records
-host -a example.com
+# Generate DNSSEC key set
+dnssec-keygen -K /etc/bind/keys -a RSASHA256 -b 2048 -n ZONE example.com
 
-# Show TTL
-host -l example.com
+# Update trust anchors
+rndc managed-keys refresh
 ```
 
-### 3. Debug Options
+### 3. Server Control
 ```bash
-# Debug mode
-host -d example.com
+# Reload specific zone
+rndc reload example.com
 
-# Trace resolution
-delv +trace example.com
+# Dump zone data
+rndc dumpdb -zones
 
-# Show timing
-host -t example.com
+# Enable query logging
+rndc querylog
 ```
 
 ## Best Practices
 
-### 1. DNS Validation
+### 1. Security
 ```bash
-# Check authoritative servers
-host -t NS example.com
+# Regular key rotation
+dnssec-settime -I +6mon -D +7mon K*.key
 
-# Verify DNSSEC
-delv +dnssec example.com
+# Check configuration
+named-checkconf /etc/bind/named.conf
 
-# Test recursion
-host -r example.com
+# Verify DNSSEC setup
+named-checkzone -k example.com zone.db
 ```
 
-### 2. Service Checks
+### 2. Performance
 ```bash
-# Test mail configuration
-host -t MX example.com
+# Monitor server status
+rndc status
 
-# Verify SPF
-host -t TXT example.com
+# Check zone serial numbers
+named-checkzone -i serial example.com zone.db
 
-# Check service records
-host -t SRV _service._proto.example.com
+# Optimize cache
+rndc flush; rndc reload
 ```
 
-### 3. Troubleshooting
+### 3. Maintenance
 ```bash
-# Debug resolution
-host -d example.com
+# Regular zone checks
+named-checkzone example.com zone.db
 
-# Check reverse DNS
-host -t PTR ip.address.in-addr.arpa
+# Update trust anchors
+rndc managed-keys refresh
 
-# Verify DNSSEC chain
-delv +vtrace example.com
+# Clear journal files
+rndc sync -clean
 ```
 
 ## Common Scenarios
 
-### 1. DNS Health Checks
+### 1. Zone Migration
 ```bash
-# Check nameservers
-host -t NS example.com
+# Export zone data
+rndc dumpdb -zones
+named-checkzone -D example.com zone.db > zone_export.db
 
-# Verify mail setup
-host -t MX example.com
+# Verify zone data
+named-checkzone example.com zone_export.db
 
-# Test reverse DNS
-host ip-address
+# Import to new server
+rndc reload example.com
 ```
 
-### 2. Security Verification
+### 2. DNSSEC Management
 ```bash
-# Check DNSSEC
-delv +dnssec example.com
+# Generate new keys
+dnssec-keygen -a RSASHA256 -b 2048 -n ZONE example.com
 
-# Verify SPF
-host -t TXT example.com
+# Sign zone
+dnssec-signzone -A -3 random -N INCREMENT -o example.com zone.db
 
-# Check DMARC
-host -t TXT _dmarc.example.com
+# Update trust anchors
+rndc managed-keys refresh
 ```
 
-### 3. Service Validation
+### 3. Troubleshooting
 ```bash
-# Test service discovery
-host -t SRV _service._tcp.example.com
+# Check configuration
+named-checkconf
 
-# Check load balancing
-for i in {1..5}; do host example.com; done
+# Verify zone
+named-checkzone example.com zone.db
 
-# Verify failover
-host -t A failover.example.com
-```
-
-## Integration Examples
-
-### 1. With Container Platforms
-```bash
-# Kubernetes service discovery
-host service.namespace.svc.cluster.local
-
-# Docker DNS check
-host container.docker.internal
-
-# Consul service lookup
-host service.consul
-```
-
-### 2. With Cloud Services
-```bash
-# Azure DNS
-host service.azurewebsites.net
-
-# AWS Route53
-host service.amazonaws.com
-
-# GCP DNS
-host -t A service.googleapis.com
-```
-
-### 3. With Monitoring
-```bash
-# Response time check
-time host example.com
-
-# Continuous monitoring
-while true; do host example.com; sleep 300; done
-
-# Record changes
-host -a example.com > dns-record.log
+# Monitor queries
+rndc querylog
 ```
 
 ## Troubleshooting
 
 ### Common Issues
-1. Resolution failures
+1. Zone File Problems
    ```bash
-   # Debug resolution
-   host -d example.com
-   
-   # Check nameservers
-   host -t NS example.com
-   
-   # Verify records
-   host -a example.com
+   # Check syntax
+   named-checkzone example.com zone.db
+
+   # Verify serial
+   named-checkzone -i serial example.com zone.db
    ```
 
-2. DNSSEC problems
+2. DNSSEC Issues
    ```bash
-   # Check DNSSEC chain
-   delv +vtrace example.com
-   
-   # Validate signatures
-   delv +dnssec example.com
-   
-   # Test trust anchors
-   delv +root example.com
+   # Verify keys
+   dnssec-verify zone.db
+
+   # Check chain of trust
+   named-checkzone -k example.com zone.db
    ```
 
-3. Service issues
+3. Server Problems
    ```bash
-   # Check SRV records
-   host -t SRV _service._proto.example.com
-   
-   # Verify aliases
-   host -t CNAME service.example.com
-   
-   # Test load balancing
-   host -v loadbalancer.example.com
+   # Check status
+   rndc status
+
+   # View statistics
+   rndc stats
    ```
 
-### Best Practices
-1. Regular checks
+### Integration Tips
+1. Azure Integration
    ```bash
-   # Health check script
-   for type in A MX NS TXT; do
-     host -t $type example.com
-   done
-   
-   # DNSSEC validation
-   delv +dnssec example.com
+   # Prepare zone for Azure
+   named-checkzone -k azure.example.com zone.db
+
+   # Export zone data
+   named-checkzone -D azure.example.com zone.db > azure_export.db
    ```
 
-2. Security verification
+2. Kubernetes Integration
    ```bash
-   # Check DNSSEC
-   delv +vtrace example.com
-   
-   # Verify SPF/DMARC
-   host -t TXT example.com
+   # Check CoreDNS zones
+   named-checkzone cluster.local zone.db
+
+   # Verify service records
+   named-checkzone -D cluster.local zone.db
    ```
 
-3. Performance monitoring
+3. Container Integration
    ```bash
-   # Response time
-   time host example.com
-   
-   # Continuous testing
-   while true; do
-     host example.com
-     sleep 60
-   done
+   # Manage container DNS
+   rndc reload container.local
+
+   # Check container zones
+   named-checkzone container.local zone.db
