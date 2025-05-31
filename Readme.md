@@ -17,14 +17,14 @@ buildah bud -t azure-admin .
 
 2. Run the container:
 ```bash
-# Run with Docker
-docker run -it \
+# Run with Docker (privileged mode required for Podman/Buildah)
+docker run -it --privileged \
   -v $HOME/.azure:/root/.azure \
   -v $HOME/.kube:/root/.kube \
   azure-admin bash
 
-# Or run with Podman
-podman run -it \
+# Or run with Podman (privileged mode required)
+podman run -it --privileged \
   -v $HOME/.azure:/root/.azure \
   -v $HOME/.kube:/root/.kube \
   azure-admin bash
