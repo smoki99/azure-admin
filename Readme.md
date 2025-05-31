@@ -16,18 +16,15 @@ buildah bud -t azure-admin .
 ```
 
 2. Run the container:
+> **Important:**  
+> When running Podman or Buildah **inside a container on Docker Desktop (Windows WSL2)**, they require **privileged mode** due to kernel and user namespace limitations. Without `--privileged` and additional security options, rootless container features like user namespaces and `newuidmap`/`newgidmap` mappings will not work properly.
+
 ```bash
 # Run with Docker (privileged mode required for Podman/Buildah)
-docker run -it --privileged \
-  -v $HOME/.azure:/root/.azure \
-  -v $HOME/.kube:/root/.kube \
-  azure-admin bash
+docker run -it --privileged -v $HOME/.azure:/root/.azure -v $HOME/.kube:/root/.kube azure-admin bash
 
 # Or run with Podman (privileged mode required)
-podman run -it --privileged \
-  -v $HOME/.azure:/root/.azure \
-  -v $HOME/.kube:/root/.kube \
-  azure-admin bash
+podman run -it --privileged -v $HOME/.azure:/root/.azure -v $HOME/.kube:/root/.kube azure-admin bash
 ```
 
 ### Using Kubernetes
