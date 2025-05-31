@@ -1,3 +1,4 @@
+
 # buildah
 
 ## Overview
@@ -18,6 +19,8 @@ Buildah is a tool specializing in building OCI container images. It provides a m
 - Layer manipulation
 - Integration with other tools
 - Mount-and-modify capability
+
+> ⚠️ Note: On Docker Desktop with WSL2, Buildah requires **privileged mode** to work properly due to user namespace and overlay filesystem limitations. Rootless Buildah will typically fail inside a regular Docker container with errors like `newuidmap: permission denied`. Use `--privileged` when running Buildah in Docker.
 
 ## Basic Usage
 
@@ -66,19 +69,13 @@ Build and push to Azure:
 buildah login myregistry.azurecr.io
 
 # Build for ACR
-buildah bud \
-  --tag myregistry.azurecr.io/myapp:v1 \
-  --file Dockerfile.prod \
-  .
+buildah bud   --tag myregistry.azurecr.io/myapp:v1   --file Dockerfile.prod   .
 
 # Push to ACR
 buildah push myregistry.azurecr.io/myapp:v1
 
 # Build and push in one step
-buildah bud \
-  --tag myregistry.azurecr.io/myapp:v1 \
-  --push \
-  .
+buildah bud   --tag myregistry.azurecr.io/myapp:v1   --push   .
 ```
 
 ### 2. Multi-Stage Builds
@@ -104,10 +101,7 @@ CMD ["npm", "start"]
 EOF
 
 # Build with buildah
-buildah bud \
-  --tag myapp:prod \
-  --file Dockerfile \
-  .
+buildah bud   --tag myapp:prod   --file Dockerfile   .
 ```
 
 ### 3. Custom Base Images
@@ -118,16 +112,12 @@ Create specialized base images:
 # Create minimal base image
 container=$(buildah from scratch)
 buildah copy $container rootfs/ /
-buildah config \
-  --cmd /bin/bash \
-  --env PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-  $container
+buildah config   --cmd /bin/bash   --env PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin   $container
 buildah commit $container minimal-base:latest
 
 # Add Azure tools
 container=$(buildah from minimal-base:latest)
-buildah run $container -- \
-  curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+buildah run $container --   curl -sL https://aka.ms/InstallAzureCLIDeb | bash
 buildah commit $container azure-base:latest
 ```
 
@@ -136,11 +126,7 @@ buildah commit $container azure-base:latest
 ### 1. Layer Optimization
 ```bash
 # Combine RUN commands
-buildah run $container -- sh -c \
-  'apt-get update && \
-   apt-get install -y python3 && \
-   apt-get clean && \
-   rm -rf /var/lib/apt/lists/*'
+buildah run $container -- sh -c   'apt-get update &&    apt-get install -y python3 &&    apt-get clean &&    rm -rf /var/lib/apt/lists/*'
 
 # Use mount for complex operations
 mnt=$(buildah mount $container)
@@ -151,15 +137,10 @@ buildah unmount $container
 ### 2. Security Hardening
 ```bash
 # Remove unnecessary files
-buildah run $container -- sh -c \
-  'rm -rf /tmp/* /var/cache/apt/*'
+buildah run $container -- sh -c   'rm -rf /tmp/* /var/cache/apt/*'
 
 # Set secure defaults
-buildah config \
-  --user nonroot \
-  --port 8080 \
-  --env SSL_CERT_DIR=/etc/ssl/certs \
-  $container
+buildah config   --user nonroot   --port 8080   --env SSL_CERT_DIR=/etc/ssl/certs   $container
 ```
 
 ### 3. Build Automation
@@ -175,10 +156,7 @@ buildah run $container apk add --no-cache python3
 buildah copy $container app/ /app/
 
 # Configure
-buildah config \
-  --workingdir /app \
-  --entrypoint '["python3", "app.py"]' \
-  $container
+buildah config   --workingdir /app   --entrypoint '["python3", "app.py"]'   $container
 
 # Commit
 buildah commit $container myapp:latest
@@ -189,30 +167,18 @@ buildah commit $container myapp:latest
 ### 1. Azure Integration
 ```bash
 # Build with Azure credentials
-buildah bud \
-  --tag myapp:latest \
-  --build-arg AZURE_CLIENT_ID=$CLIENT_ID \
-  --build-arg AZURE_TENANT_ID=$TENANT_ID \
-  .
+buildah bud   --tag myapp:latest   --build-arg AZURE_CLIENT_ID=$CLIENT_ID   --build-arg AZURE_TENANT_ID=$TENANT_ID   .
 
 # Build with Azure storage
-buildah bud \
-  --tag myapp:latest \
-  --secret id=azure-storage,src=azure-storage.txt \
-  .
+buildah bud   --tag myapp:latest   --secret id=azure-storage,src=azure-storage.txt   .
 ```
 
 ### 2. Azure Services Support
 ```bash
 # Build with service dependencies
-buildah run $container -- sh -c \
-  'curl -sL https://packages.microsoft.com/keys/microsoft.asc | \
-   gpg --dearmor | \
-   tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null'
+buildah run $container -- sh -c   'curl -sL https://packages.microsoft.com/keys/microsoft.asc |    gpg --dearmor |    tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null'
 
-buildah run $container -- sh -c \
-  'echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $(lsb_release -cs) main" | \
-   tee /etc/apt/sources.list.d/azure-cli.list'
+buildah run $container -- sh -c   'echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $(lsb_release -cs) main" |    tee /etc/apt/sources.list.d/azure-cli.list'
 
 buildah run $container -- apt-get update && apt-get install -y azure-cli
 ```
@@ -220,17 +186,9 @@ buildah run $container -- apt-get update && apt-get install -y azure-cli
 ### 3. Azure DevOps Integration
 ```bash
 # Build for different environments
-buildah bud \
-  --tag myapp:dev \
-  --file Dockerfile.dev \
-  --build-arg ENVIRONMENT=development \
-  .
+buildah bud   --tag myapp:dev   --file Dockerfile.dev   --build-arg ENVIRONMENT=development   .
 
-buildah bud \
-  --tag myapp:prod \
-  --file Dockerfile.prod \
-  --build-arg ENVIRONMENT=production \
-  .
+buildah bud   --tag myapp:prod   --file Dockerfile.prod   --build-arg ENVIRONMENT=production   .
 ```
 
 ## Best Practices
@@ -238,19 +196,12 @@ buildah bud \
 ### 1. Image Size Optimization
 ```bash
 # Use multi-stage builds
-buildah bud \
-  --target builder \
-  --tag temp:latest \
-  .
+buildah bud   --target builder   --tag temp:latest   .
 
-buildah bud \
-  --target production \
-  --tag myapp:latest \
-  .
+buildah bud   --target production   --tag myapp:latest   .
 
 # Clean up build artifacts
-buildah run $container -- sh -c \
-  'rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*'
+buildah run $container -- sh -c   'rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*'
 ```
 
 ### 2. Security Considerations
@@ -259,25 +210,16 @@ buildah run $container -- sh -c \
 buildah config --user 1000:1000 $container
 
 # Minimize attack surface
-buildah config \
-  --env PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
-  --env DEBIAN_FRONTEND=noninteractive \
-  $container
+buildah config   --env PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin   --env DEBIAN_FRONTEND=noninteractive   $container
 ```
 
 ### 3. Build Performance
 ```bash
 # Use buildah cache
-buildah bud \
-  --layers \
-  --tag myapp:latest \
-  .
+buildah bud   --layers   --tag myapp:latest   .
 
 # Parallel builds
-buildah bud \
-  --jobs 4 \
-  --tag myapp:latest \
-  .
+buildah bud   --jobs 4   --tag myapp:latest   .
 ```
 
 ## Integration Examples
@@ -287,11 +229,7 @@ buildah bud \
 # Azure DevOps pipeline
 steps:
 - script: |
-    buildah bud \
-      --tag $(imageTag) \
-      --file Dockerfile.prod \
-      --build-arg BUILD_VERSION=$(Build.BuildNumber) \
-      .
+    buildah bud       --tag $(imageTag)       --file Dockerfile.prod       --build-arg BUILD_VERSION=$(Build.BuildNumber)       .
     buildah push $(imageTag)
   displayName: 'Build and Push Image'
 ```
@@ -302,18 +240,10 @@ steps:
 # Development build script
 
 # Build development image
-buildah bud \
-  --tag myapp:dev \
-  --file Dockerfile.dev \
-  --build-arg NODE_ENV=development \
-  .
+buildah bud   --tag myapp:dev   --file Dockerfile.dev   --build-arg NODE_ENV=development   .
 
 # Run development container
-podman run -d \
-  --name myapp-dev \
-  -v $PWD:/app \
-  -p 3000:3000 \
-  myapp:dev
+podman run -d   --name myapp-dev   -v $PWD:/app   -p 3000:3000   myapp:dev
 ```
 
 ### 3. Production Deployment
@@ -322,15 +252,11 @@ podman run -d \
 # Production deployment script
 
 # Build production image
-buildah bud \
-  --tag myregistry.azurecr.io/myapp:prod \
-  --file Dockerfile.prod \
-  --build-arg NODE_ENV=production \
-  .
+buildah bud   --tag myregistry.azurecr.io/myapp:prod   --file Dockerfile.prod   --build-arg NODE_ENV=production   .
 
 # Push to registry
 buildah push myregistry.azurecr.io/myapp:prod
 
 # Deploy to AKS
-kubectl set image deployment/myapp \
-  myapp=myregistry.azurecr.io/myapp:prod
+kubectl set image deployment/myapp   myapp=myregistry.azurecr.io/myapp:prod
+```

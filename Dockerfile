@@ -96,23 +96,6 @@ RUN curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.30/deb/Release.key \
     | tar xz -C /usr/local/bin/ \
     && chmod +x /usr/local/bin/kustomize
 
-# Install container tools
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-       podman \
-       buildah \
-       skopeo \
-    && rm -rf /var/lib/apt/lists/*
-
-# Configure container tools
-RUN touch /etc/subgid /etc/subuid \
-    && usermod --add-subuids 100000-165535 --add-subgids 100000-165535 root \
-    && mkdir -p /etc/containers \
-    && echo '[engine]' > /etc/containers/containers.conf \
-    && echo 'cgroup_manager = "cgroupfs"' >> /etc/containers/containers.conf \
-    && echo 'events_logger = "file"' >> /etc/containers/containers.conf \
-    && echo 'network_backend = "cni"' >> /etc/containers/containers.conf
-
 # Install CNI plugins
 RUN mkdir -p /opt/cni/bin \
     && CNI_VERSION=$(curl -s https://api.github.com/repos/containernetworking/plugins/releases/latest | grep -Po '"tag_name": "v\K[^"]*') \
@@ -187,6 +170,29 @@ RUN echo '# Show documentation information' >> /root/.bashrc && \
 
 # Set working directory
 WORKDIR /workspace
+
+# Install container tools and configure rootless podman
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       podman \
+       buildah \
+       skopeo \
+       sudo \
+       libfuse3-dev \
+       fuse-overlayfs \
+       runc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set up container runtime storage and user namespace configuration for rootless operation
+RUN mkdir -p /etc/containers && \
+    echo '[storage]' > /etc/containers/storage.conf && \
+    echo 'driver = "overlay"' >> /etc/containers/storage.conf && \
+    echo 'runroot = "/tmp/podman-run"' >> /etc/containers/storage.conf && \
+    echo 'graphroot = "/tmp/podman-graph"' >> /etc/containers/storage.conf && \
+    echo "[engine]" > /etc/containers/containers.conf && \
+    echo "userns = \"keep-id\"" >> /etc/containers/containers.conf && \
+    echo "cgroup_manager = \"cgroupfs\"" >> /etc/containers/containers.conf && \
+    echo "runtime = \"runc\"" >> /etc/containers/containers.conf
 
 # Set default command
 CMD ["/bin/bash"]
