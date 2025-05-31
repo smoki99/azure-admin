@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
     mtr-tiny nmap netcat-openbsd socat rsync duf ncdu \
     iperf3 iftop nethogs iptraf-ng strace htop iotop \
     bridge-utils vlan iptables ipset ebtables arptables conntrack \
-    apache2-utils ipcalc mosh ripgrep w3m neovim swaks \
+    apache2-utils ipcalc mosh ripgrep w3m neovim swaks tmux toilet \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/nvim /usr/bin/vim \
     && ln -sf /usr/bin/nvim /usr/bin/vi
